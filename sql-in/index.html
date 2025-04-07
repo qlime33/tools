@@ -1,257 +1,279 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>SQL IN Clause Generator</title>
+  <title>Time Comparison: Beaverton, Hilversum, Bangalore</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #1a1a1a;
-      color: #e0e0e0;
-      display: flex;
-      justify-content: center;
+    body { 
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
+      margin: 0 auto; 
+      max-width: 1024px;
       padding: 20px;
+      background-color: #1a1a1a;
+      color: #ffffff;
     }
-    .container {
-      width: 1024px;
-      max-width: 100%;
-    }
-    textarea {
-      width: 100%;
-      padding: 8px;
-      font-size: 14px;
-      box-sizing: border-box;
+    table { 
+      border-collapse: collapse; 
+      width: 100%; 
+      margin-top: 10px;
       background-color: #2d2d2d;
-      color: #e0e0e0;
-      border: 1px solid #404040;
-      border-radius: 4px;
     }
-    textarea:focus {
-      outline: none;
-      border-color: #666;
+    th, td { 
+      border: 1px solid #444; 
+      padding: 8px; 
+      text-align: center; 
     }
-    #csvInput {
-      height: 150px;
+    th {
+      background-color: #333;
     }
-    .input-container {
-      position: relative;
+    tr:hover {
+      background-color: #3d3d3d;
     }
-    .clear-button {
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      background: none;
-      border: none;
-      color: #999;
-      cursor: pointer;
-      padding: 5px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 14px;
-      transition: all 0.2s ease;
+    h1, h2 { 
+      margin-bottom: 5px; 
     }
-    .clear-button:hover {
-      color: #e0e0e0;
-    }
-    .clear-button.cleared {
-      animation: clearAnimation 0.5s ease;
-    }
-    @keyframes clearAnimation {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-    .code-box {
+    #currentTimes ul, #timeChanges ul {
       background-color: #2d2d2d;
-      border: 1px solid #404040;
-      border-radius: 4px;
       padding: 15px;
-      position: relative;
-      font-family: 'Courier New', monospace;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      min-height: 50px;
-      font-size: 12px;
-      line-height: 1.4;
+      border-radius: 5px;
+      list-style-type: none;
     }
-    #output {
-      height: 50px;
-      font-family: 'Courier New', monospace;
+    .current-times {
+      width: auto;
+      margin: 20px 0;
       background-color: #2d2d2d;
-      color: #e0e0e0;
-      border: 1px solid #404040;
-      border-radius: 4px;
-      padding: 10px;
-      margin-top: 20px;
     }
-    .output-container {
-      position: relative;
-      margin-top: 20px;
+    .current-times th,
+    .current-times td {
+      padding: 12px 20px;
+      text-align: left;
     }
-    .copy-button {
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      background: none;
-      border: none;
-      color: #999;
-      cursor: pointer;
-      padding: 5px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 14px;
-      transition: all 0.2s ease;
+    .current-times td:nth-child(2) {
+      font-family: monospace;
+      font-size: 1.1em;
     }
-    .copy-button:hover {
-      color: #e0e0e0;
+    .current-times td:nth-child(3) {
+      color: #8ab4f8;
     }
-    .copy-button.copied {
-      animation: copyAnimation 0.5s ease;
-    }
-    @keyframes copyAnimation {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-    .count {
-      font-size: 12px;
-      color: #999;
-      margin-top: 5px;
-    }
-    h1 {
-      color: #fff;
-    }
-    p {
-      color: #ccc;
+    .current-times th {
+      background-color: #333;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>SQL IN Clause Generator</h1>
-    <p>
-      Paste your CSV list below. This tool will extract the last value from each line, trim it,
-      wrap it in single quotes, and then output a SQL IN clause.
-    </p>
-    <div class="input-container">
-      <textarea id="csvInput" placeholder="Paste CSV here..." oninput="updateSQL()"></textarea>
-      <button class="clear-button" onclick="clearInput()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6L6 18"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-        Clear
-      </button>
-    </div>
-    <div class="count" id="inputCount">0 rows</div>
-    <br>
-    <div class="output-container">
-      <div class="code-box" id="output">SQL IN Clause will appear here...</div>
-      <button class="copy-button" onclick="copyToClipboard()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6L9 17l-5-5"></path>
-        </svg>
-        Copy
-      </button>
-    </div>
-    <div class="count" id="outputCount">0 unique values</div>
-  </div>
+  <h1>Time Comparison</h1>
+  <div id="currentTimes"></div>
+  <table id="timeTable">
+    <thead>
+      <tr>
+        <th>Beaverton, OR</th>
+        <th>Hilversum, NL</th>
+        <th>Bangalore, India</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be populated by JavaScript -->
+    </tbody>
+  </table>
+  <div id="timeChanges"></div>
 
   <script>
-    function clearInput() {
-      document.getElementById("csvInput").value = "";
-      updateSQL();
-      
-      // Show feedback with animation
-      const clearButton = document.querySelector('.clear-button');
-      clearButton.classList.add('cleared');
-      setTimeout(() => {
-        clearButton.classList.remove('cleared');
-      }, 500);
+    // Helper function: get timezone offset (in minutes) for a given timezone and date.
+    function getTimezoneOffset(tz, date) {
+      // Convert the date to a string in the target time zone.
+      var localeStr = date.toLocaleString("en-US", { timeZone: tz });
+      // Parse it back as a local Date.
+      var local = new Date(localeStr);
+      // The difference (in minutes) between the actual time and the parsed local time
+      return (date - local) / 60000;
     }
 
-    function updateSQL() {
-      // Update input count
-      const input = document.getElementById("csvInput").value;
-      const lines = input.split(/\r?\n/).filter(line => line.trim() !== "");
-      document.getElementById("inputCount").textContent = `${lines.length} rows`;
+    // Finds the next time when the timezone offset changes (indicating a DST change).
+    function findNextTimeChange(tz) {
+      let now = new Date();
+      let currentOffset = getTimezoneOffset(tz, now);
+      let step = 60 * 60000; // 60-minute steps initially.
+      let testTime = new Date(now.getTime() + step);
+      const oneYear = 31536000000; // one year in ms
 
-      // Process the input
-      const uniqueItems = new Set();
-
-      // Process each line
-      lines.forEach(line => {
-        // Split the line by comma
-        const parts = line.split(",");
-        // Get the last item and trim whitespace
-        const item = parts[parts.length - 1].trim();
-        if (item !== "") {
-          // Add the item to the Set (automatically handles duplicates)
-          uniqueItems.add("'" + item.toLowerCase() + "'");
+      while(testTime.getTime() - now.getTime() < oneYear) {
+        let newOffset = getTimezoneOffset(tz, testTime);
+        if(newOffset !== currentOffset) {
+          // Once a change is detected, narrow down the moment with a binary search.
+          let low = new Date(testTime.getTime() - step);
+          let high = testTime;
+          while(high - low > 60000) { // until the difference is less than a minute
+            let mid = new Date((low.getTime() + high.getTime()) / 2);
+            if(getTimezoneOffset(tz, mid) === currentOffset) {
+              low = mid;
+            } else {
+              high = mid;
+            }
+          }
+          return high;
         }
-      });
-
-      // Convert Set to array and sort alphabetically
-      const sortedItems = Array.from(uniqueItems).sort();
-
-      // Create the SQL IN clause by joining the unique items with a comma and space,
-      // then wrapping the result in parentheses.
-      const sqlClause = "(" + sortedItems.join(", ") + ")";
-      // Output the result in the output div
-      document.getElementById("output").textContent = sqlClause;
-      // Update output count
-      document.getElementById("outputCount").textContent = `${sortedItems.length} unique values`;
+        testTime = new Date(testTime.getTime() + step);
+      }
+      return null;
     }
 
-    function copyToClipboard() {
-      const output = document.getElementById("output");
-      const text = output.textContent;
+    // Updates the "Current Times" display.
+    function updateCurrentTimes() {
+      const timeZones = {
+        "Beaverton, OR": "America/Los_Angeles",
+        "Hilversum, NL": "Europe/Amsterdam",
+        "Bangalore, India": "Asia/Kolkata"
+      };
+      let now = new Date();
       
-      // Create temporary textarea for copying
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      
-      // Show feedback with animation
-      const copyButton = document.querySelector('.copy-button');
-      const originalText = copyButton.innerHTML;
-      copyButton.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6L9 17l-5-5"></path>
-        </svg>
-        Copied!
+      // Get Beaverton's date and hour as reference
+      let beavertonDateTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+      let beavertonHour = beavertonDateTime.getHours();
+      let beavertonDay = beavertonDateTime.getDate();
+
+      let currentTimesHTML = `
+        <h2>Current Times</h2>
+        <table class="current-times">
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Time</th>
+              <th>Difference</th>
+            </tr>
+          </thead>
+          <tbody>
       `;
-      copyButton.classList.add('copied');
+
+      for(let location in timeZones) {
+        let tz = timeZones[location];
+        let timeStr = now.toLocaleTimeString("en-US", { 
+          timeZone: tz, 
+          hour: '2-digit', 
+          minute: '2-digit'
+        });
+        
+        // Calculate hour difference for non-Beaverton locations
+        let hourDiff = '';
+        if (location !== "Beaverton, OR") {
+          let locationDateTime = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+          let locationHour = locationDateTime.getHours();
+          let locationDay = locationDateTime.getDate();
+          
+          let diff = locationHour - beavertonHour;
+          
+          // Adjust for day difference
+          if (locationDay > beavertonDay) {
+            diff += 24;
+          } else if (locationDay < beavertonDay) {
+            diff -= 24;
+          }
+          
+          hourDiff = `+${diff} hours`;
+        }
+        
+        currentTimesHTML += `
+          <tr>
+            <td>${location}</td>
+            <td>${timeStr}</td>
+            <td>${hourDiff}</td>
+          </tr>
+        `;
+      }
       
-      setTimeout(() => {
-        copyButton.innerHTML = originalText;
-        copyButton.classList.remove('copied');
-      }, 1000);
+      currentTimesHTML += `
+          </tbody>
+        </table>
+      `;
+      
+      document.getElementById("currentTimes").innerHTML = currentTimesHTML;
     }
+
+    // Generates the 24-hour grid starting at 7am Beaverton time
+    function generateTimeGrid() {
+      const tableBody = document.getElementById("timeTable").getElementsByTagName("tbody")[0];
+      tableBody.innerHTML = "";
+      
+      // Get Beaverton's current date as seen in the America/Los_Angeles time zone
+      let beavertonDateStr = new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" });
+      // Create a Date object for 7am of that day
+      let beavertonStart = new Date(beavertonDateStr + " 07:00:00");
+
+      for(let i = 0; i < 24; i++) {
+        let row = document.createElement("tr");
+        // Create a new Date for each hour based on Beaverton 7am start
+        let dateBeaverton = new Date(beavertonStart.getTime());
+        dateBeaverton.setHours(dateBeaverton.getHours() + i);
+        
+        // Format the time for each location
+        let timeBeaverton = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "America/Los_Angeles", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        let timeHilversum = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "Europe/Amsterdam", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        let timeBangalore = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "Asia/Kolkata", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        // Create and populate the cells
+        let cell1 = document.createElement("td");
+        cell1.textContent = timeBeaverton;
+        let cell2 = document.createElement("td");
+        cell2.textContent = timeHilversum;
+        let cell3 = document.createElement("td");
+        cell3.textContent = timeBangalore;
+        
+        row.appendChild(cell1);
+        row.appendChild(cell2);
+        row.appendChild(cell3);
+        tableBody.appendChild(row);
+      }
+    }
+
+    // Displays information about the next time change (DST) for each location.
+    function displayTimeChanges() {
+      const timeZones = {
+        "Beaverton, OR": "America/Los_Angeles",
+        "Hilversum, NL": "Europe/Amsterdam",
+        "Bangalore, India": "Asia/Kolkata"
+      };
+      let changesHTML = "<h2>Next Time Change</h2><ul>";
+      for(let location in timeZones) {
+        let tz = timeZones[location];
+        let nextChange = findNextTimeChange(tz);
+        if(nextChange) {
+          let changeStr = nextChange.toLocaleString("en-US", { 
+            timeZone: tz, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+          changesHTML += "<li>" + location + ": " + changeStr + "</li>";
+        } else {
+          changesHTML += "<li>" + location + ": No upcoming time change</li>";
+        }
+      }
+      changesHTML += "</ul>";
+      document.getElementById("timeChanges").innerHTML = changesHTML;
+    }
+
+    // Initial updates.
+    updateCurrentTimes();
+    generateTimeGrid();
+    displayTimeChanges();
+
+    // Update the current time display every second.
+    setInterval(updateCurrentTimes, 1000);
   </script>
 </body>
-</html> 
+</html>
