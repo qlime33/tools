@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Time Comparison: Beaverton, Hilversum, Bangalore</title>
+  <style>
+    body { 
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
+      margin: 0 auto; 
+      max-width: 1024px;
+      padding: 20px;
+      background-color: #ffffff;
+      color: #333333;
+    }
+    table { 
+      border-collapse: collapse; 
+      width: 100%; 
+      margin-top: 10px;
+      background-color: #ffffff;
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 8px; 
+      text-align: center; 
+    }
+    th {
+      background-color: #f5f5f5;
+    }
+    tr:hover {
+      background-color: #f8f8f8;
+    }
+    h1, h2 { 
+      margin-bottom: 5px;
+      color: #333333;
+    }
+    #currentTimes ul, #timeChanges ul {
+      background-color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      list-style-type: none;
+    }
+    .current-times {
+      width: auto;
+      margin: 20px 0;
+      background-color: #ffffff;
+    }
+    .current-times th,
+    .current-times td {
+      padding: 12px 20px;
+      text-align: left;
+    }
+    .current-times td:nth-child(2) {
+      font-family: monospace;
+      font-size: 1.1em;
+    }
+    .current-times td:nth-child(3) {
+      color: #0066cc;
+    }
+    .current-times th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Time Comparison</h1>
+  <div id="currentTimes"></div>
+  <table id="timeTable">
+    <thead>
+      <tr>
+        <th>Beaverton, OR</th>
+        <th>Hilversum, NL</th>
+        <th>Bangalore, India</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be populated by JavaScript -->
+    </tbody>
+  </table>
+  <div id="timeChanges"></div>
+
+  <script>
+    // Helper function: get timezone offset (in minutes) for a given timezone and date.
+    function getTimezoneOffset(tz, date) {
+      // Convert the date to a string in the target time zone.
+      var localeStr = date.toLocaleString("en-US", { timeZone: tz });
+      // Parse it back as a local Date.
+      var local = new Date(localeStr);
+      // The difference (in minutes) between the actual time and the parsed local time
+      return (date - local) / 60000;
+    }
+
+    // Finds the next time when the timezone offset changes (indicating a DST change).
+    function findNextTimeChange(tz) {
+      let now = new Date();
+      let currentOffset = getTimezoneOffset(tz, now);
+      let step = 60 * 60000; // 60-minute steps initially.
+      let testTime = new Date(now.getTime() + step);
+      const oneYear = 31536000000; // one year in ms
+
+      while(testTime.getTime() - now.getTime() < oneYear) {
+        let newOffset = getTimezoneOffset(tz, testTime);
+        if(newOffset !== currentOffset) {
+          // Once a change is detected, narrow down the moment with a binary search.
+          let low = new Date(testTime.getTime() - step);
+          let high = testTime;
+          while(high - low > 60000) { // until the difference is less than a minute
+            let mid = new Date((low.getTime() + high.getTime()) / 2);
+            if(getTimezoneOffset(tz, mid) === currentOffset) {
+              low = mid;
+            } else {
+              high = mid;
+            }
+          }
+          return high;
+        }
+        testTime = new Date(testTime.getTime() + step);
+      }
+      return null;
+    }
+
+    // Updates the "Current Times" display.
+    function updateCurrentTimes() {
+      const timeZones = {
+        "Beaverton, OR": "America/Los_Angeles",
+        "Hilversum, NL": "Europe/Amsterdam",
+        "Bangalore, India": "Asia/Kolkata"
+      };
+      let now = new Date();
+      
+      // Get Beaverton's date and hour as reference
+      let beavertonDateTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+      let beavertonHour = beavertonDateTime.getHours();
+      let beavertonDay = beavertonDateTime.getDate();
+
+      let currentTimesHTML = `
+        <h2>Current Times</h2>
+        <table class="current-times">
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Time</th>
+              <th>Difference</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for(let location in timeZones) {
+        let tz = timeZones[location];
+        let timeStr = now.toLocaleTimeString("en-US", { 
+          timeZone: tz, 
+          hour: '2-digit', 
+          minute: '2-digit'
+        });
+        
+        // Calculate hour difference for non-Beaverton locations
+        let hourDiff = '';
+        if (location !== "Beaverton, OR") {
+          let locationDateTime = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+          let locationHour = locationDateTime.getHours();
+          let locationDay = locationDateTime.getDate();
+          
+          let diff = locationHour - beavertonHour;
+          
+          // Adjust for day difference
+          if (locationDay > beavertonDay) {
+            diff += 24;
+          } else if (locationDay < beavertonDay) {
+            diff -= 24;
+          }
+          
+          hourDiff = `+${diff} hours`;
+        }
+        
+        currentTimesHTML += `
+          <tr>
+            <td>${location}</td>
+            <td>${timeStr}</td>
+            <td>${hourDiff}</td>
+          </tr>
+        `;
+      }
+      
+      currentTimesHTML += `
+          </tbody>
+        </table>
+      `;
+      
+      document.getElementById("currentTimes").innerHTML = currentTimesHTML;
+    }
+
+    // Generates the 24-hour grid starting at 7am Beaverton time
+    function generateTimeGrid() {
+      const tableBody = document.getElementById("timeTable").getElementsByTagName("tbody")[0];
+      tableBody.innerHTML = "";
+      
+      // Get Beaverton's current date as seen in the America/Los_Angeles time zone
+      let beavertonDateStr = new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" });
+      // Create a Date object for 7am of that day
+      let beavertonStart = new Date(beavertonDateStr + " 07:00:00");
+
+      for(let i = 0; i < 24; i++) {
+        let row = document.createElement("tr");
+        // Create a new Date for each hour based on Beaverton 7am start
+        let dateBeaverton = new Date(beavertonStart.getTime());
+        dateBeaverton.setHours(dateBeaverton.getHours() + i);
+        
+        // Format the time for each location
+        let timeBeaverton = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "America/Los_Angeles", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        let timeHilversum = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "Europe/Amsterdam", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        let timeBangalore = dateBeaverton.toLocaleTimeString("en-US", { 
+          timeZone: "Asia/Kolkata", 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        // Create and populate the cells
+        let cell1 = document.createElement("td");
+        cell1.textContent = timeBeaverton;
+        let cell2 = document.createElement("td");
+        cell2.textContent = timeHilversum;
+        let cell3 = document.createElement("td");
+        cell3.textContent = timeBangalore;
+        
+        row.appendChild(cell1);
+        row.appendChild(cell2);
+        row.appendChild(cell3);
+        tableBody.appendChild(row);
+      }
+    }
+
+    // Displays information about the next time change (DST) for each location.
+    function displayTimeChanges() {
+      const timeZones = {
+        "Beaverton, OR": "America/Los_Angeles",
+        "Hilversum, NL": "Europe/Amsterdam",
+        "Bangalore, India": "Asia/Kolkata"
+      };
+      let changesHTML = "<h2>Next Time Change</h2><ul>";
+      for(let location in timeZones) {
+        let tz = timeZones[location];
+        let nextChange = findNextTimeChange(tz);
+        if(nextChange) {
+          let changeStr = nextChange.toLocaleString("en-US", { 
+            timeZone: tz, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+          changesHTML += "<li>" + location + ": " + changeStr + "</li>";
+        } else {
+          changesHTML += "<li>" + location + ": No upcoming time change</li>";
+        }
+      }
+      changesHTML += "</ul>";
+      document.getElementById("timeChanges").innerHTML = changesHTML;
+    }
+
+    // Initial updates.
+    updateCurrentTimes();
+    generateTimeGrid();
+    displayTimeChanges();
+
+    // Update the current time display every second.
+    setInterval(updateCurrentTimes, 1000);
+  </script>
+</body>
+</html>
