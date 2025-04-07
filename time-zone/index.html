@@ -127,9 +127,10 @@
       };
       let now = new Date();
       
-      // Get Beaverton's date and hour as reference
+      // Get Beaverton's date and time as reference
       let beavertonDateTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
       let beavertonHour = beavertonDateTime.getHours();
+      let beavertonMinutes = beavertonDateTime.getMinutes();
       let beavertonDay = beavertonDateTime.getDate();
 
       let currentTimesHTML = `
@@ -153,30 +154,34 @@
           minute: '2-digit'
         });
         
-        // Calculate hour difference for non-Beaverton locations
-        let hourDiff = '';
+        // Calculate hour and minute difference for non-Beaverton locations
+        let diffStr = '';
         if (location !== "Beaverton, OR") {
           let locationDateTime = new Date(now.toLocaleString("en-US", { timeZone: tz }));
           let locationHour = locationDateTime.getHours();
+          let locationMinutes = locationDateTime.getMinutes();
           let locationDay = locationDateTime.getDate();
           
-          let diff = locationHour - beavertonHour;
+          let totalMinutesDiff = (locationHour * 60 + locationMinutes) - (beavertonHour * 60 + beavertonMinutes);
           
           // Adjust for day difference
           if (locationDay > beavertonDay) {
-            diff += 24;
+            totalMinutesDiff += 24 * 60;
           } else if (locationDay < beavertonDay) {
-            diff -= 24;
+            totalMinutesDiff -= 24 * 60;
           }
           
-          hourDiff = `+${diff} hours`;
+          let hoursDiff = Math.floor(totalMinutesDiff / 60);
+          let minutesDiff = Math.abs(totalMinutesDiff % 60);
+          
+          diffStr = `+${hoursDiff}${minutesDiff > 0 ? `:${minutesDiff.toString().padStart(2, '0')}` : ''} hours`;
         }
         
         currentTimesHTML += `
           <tr>
             <td>${location}</td>
             <td>${timeStr}</td>
-            <td>${hourDiff}</td>
+            <td>${diffStr}</td>
           </tr>
         `;
       }
