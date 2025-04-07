@@ -34,6 +34,57 @@
     #csvInput {
       height: 150px;
     }
+    .input-container {
+      position: relative;
+    }
+    .clear-button {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .clear-button:hover {
+      color: #e0e0e0;
+    }
+    .clear-button.cleared {
+      animation: clearAnimation 0.5s ease;
+    }
+    @keyframes clearAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    .code-box {
+      background-color: #2d2d2d;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      padding: 15px;
+      position: relative;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 50px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
     #output {
       height: 50px;
       font-family: 'Courier New', monospace;
@@ -94,17 +145,6 @@
     p {
       color: #ccc;
     }
-    .code-box {
-      background-color: #2d2d2d;
-      border: 1px solid #404040;
-      border-radius: 4px;
-      padding: 15px;
-      position: relative;
-      font-family: 'Courier New', monospace;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      min-height: 50px;
-    }
   </style>
 </head>
 <body>
@@ -114,7 +154,16 @@
       Paste your CSV list below. This tool will extract the last value from each line, trim it,
       wrap it in single quotes, and then output a SQL IN clause.
     </p>
-    <textarea id="csvInput" placeholder="Paste CSV here..." oninput="updateSQL()"></textarea>
+    <div class="input-container">
+      <textarea id="csvInput" placeholder="Paste CSV here..." oninput="updateSQL()"></textarea>
+      <button class="clear-button" onclick="clearInput()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+        Clear
+      </button>
+    </div>
     <div class="count" id="inputCount">0 rows</div>
     <br>
     <div class="output-container">
@@ -130,6 +179,18 @@
   </div>
 
   <script>
+    function clearInput() {
+      document.getElementById("csvInput").value = "";
+      updateSQL();
+      
+      // Show feedback with animation
+      const clearButton = document.querySelector('.clear-button');
+      clearButton.classList.add('cleared');
+      setTimeout(() => {
+        clearButton.classList.remove('cleared');
+      }, 500);
+    }
+
     function updateSQL() {
       // Update input count
       const input = document.getElementById("csvInput").value;
@@ -147,7 +208,7 @@
         const item = parts[parts.length - 1].trim();
         if (item !== "") {
           // Add the item to the Set (automatically handles duplicates)
-          uniqueItems.add("'" + item + "'");
+          uniqueItems.add("'" + item.toLowerCase() + "'");
         }
       });
 
