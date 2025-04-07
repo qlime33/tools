@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SQL IN Clause Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #1a1a1a;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      width: 1024px;
+      max-width: 100%;
+    }
+    textarea {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border: 1px solid #404040;
+      border-radius: 4px;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #666;
+    }
+    #csvInput {
+      height: 150px;
+    }
+    .input-container {
+      position: relative;
+    }
+    .clear-button {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .clear-button:hover {
+      color: #e0e0e0;
+    }
+    .clear-button.cleared {
+      animation: clearAnimation 0.5s ease;
+    }
+    @keyframes clearAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    .code-box {
+      background-color: #2d2d2d;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      padding: 15px;
+      position: relative;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 50px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    #output {
+      height: 50px;
+      font-family: 'Courier New', monospace;
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 20px;
+    }
+    .output-container {
+      position: relative;
+      margin-top: 20px;
+    }
+    .copy-button {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .copy-button:hover {
+      color: #e0e0e0;
+    }
+    .copy-button.copied {
+      animation: copyAnimation 0.5s ease;
+    }
+    @keyframes copyAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    .count {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+    }
+    h1 {
+      color: #fff;
+    }
+    p {
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SQL IN Clause Generator</h1>
+    <p>
+      Paste your CSV list below. This tool will extract the last value from each line, trim it,
+      wrap it in single quotes, and then output a SQL IN clause.
+    </p>
+    <div class="input-container">
+      <textarea id="csvInput" placeholder="Paste CSV here..." oninput="updateSQL()"></textarea>
+      <button class="clear-button" onclick="clearInput()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+        Clear
+      </button>
+    </div>
+    <div class="count" id="inputCount">0 rows</div>
+    <br>
+    <div class="output-container">
+      <div class="code-box" id="output">SQL IN Clause will appear here...</div>
+      <button class="copy-button" onclick="copyToClipboard()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6L9 17l-5-5"></path>
+        </svg>
+        Copy
+      </button>
+    </div>
+    <div class="count" id="outputCount">0 unique values</div>
+  </div>
+
+  <script>
+    function clearInput() {
+      document.getElementById("csvInput").value = "";
+      updateSQL();
+      
+      // Show feedback with animation
+      const clearButton = document.querySelector('.clear-button');
+      clearButton.classList.add('cleared');
+      setTimeout(() => {
+        clearButton.classList.remove('cleared');
+      }, 500);
+    }
+
+    function updateSQL() {
+      // Update input count
+      const input = document.getElementById("csvInput").value;
+      const lines = input.split(/\r?\n/).filter(line => line.trim() !== "");
+      document.getElementById("inputCount").textContent = `${lines.length} rows`;
+
+      // Process the input
+      const uniqueItems = new Set();
+
+      // Process each line
+      lines.forEach(line => {
+        // Split the line by comma
+        const parts = line.split(",");
+        // Get the last item and trim whitespace
+        const item = parts[parts.length - 1].trim();
+        if (item !== "") {
+          // Add the item to the Set (automatically handles duplicates)
+          uniqueItems.add("'" + item.toLowerCase() + "'");
+        }
+      });
+
+      // Convert Set to array and sort alphabetically
+      const sortedItems = Array.from(uniqueItems).sort();
+
+      // Create the SQL IN clause by joining the unique items with a comma and space,
+      // then wrapping the result in parentheses.
+      const sqlClause = "(" + sortedItems.join(", ") + ")";
+      // Output the result in the output div
+      document.getElementById("output").textContent = sqlClause;
+      // Update output count
+      document.getElementById("outputCount").textContent = `${sortedItems.length} unique values`;
+    }
+
+    function copyToClipboard() {
+      const output = document.getElementById("output");
+      const text = output.textContent;
+      
+      // Create temporary textarea for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      
+      // Show feedback with animation
+      const copyButton = document.querySelector('.copy-button');
+      const originalText = copyButton.innerHTML;
+      copyButton.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6L9 17l-5-5"></path>
+        </svg>
+        Copied!
+      `;
+      copyButton.classList.add('copied');
+      
+      setTimeout(() => {
+        copyButton.innerHTML = originalText;
+        copyButton.classList.remove('copied');
+      }, 1000);
+    }
+  </script>
+</body>
+</html> 
