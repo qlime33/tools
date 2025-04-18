@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Emoji Bar‑Viz Builder</title>
+<style>
+    body            { 
+        font-family: system-ui, sans-serif; 
+        margin: 2rem;
+        background-color: #1a1a1a;
+        color: #ffffff;
+    }
+    h1              { margin-bottom: .25rem; }
+    #barDisplay     { font-size: 2.2rem; line-height: 1.4; letter-spacing: .03em; }
+    #percentInput   { 
+        width: 5rem; 
+        font-size: 1.1rem; 
+        padding: .25rem .4rem;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #444;
+        border-radius: 4px;
+    }
+    #percentSlider  { 
+        width: 200px; 
+        margin: 0 1rem;
+        background: #2d2d2d;
+    }
+    #styleSelect    { 
+        margin-left: 1rem; 
+        font-size: 1rem; 
+        padding: .25rem;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #444;
+        border-radius: 4px;
+    }
+    label           { font-weight: 600; }
+    .hint           { color: #999; font-size: .85rem; margin-top: .25rem; }
+    #copyButton     { 
+        margin-left: 1rem; 
+        padding: .25rem .75rem; 
+        font-size: .9rem; 
+        cursor: pointer; 
+        vertical-align: middle;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #444;
+        border-radius: 4px;
+    }
+    #copyButton:hover {
+        background-color: #3d3d3d;
+    }
+    .input-group    { display: flex; align-items: center; margin-bottom: 1rem; }
+    .bar-container  { display: flex; align-items: center; }
+
+    /* Style the range input for dark mode */
+    input[type="range"] {
+        -webkit-appearance: none;
+        height: 8px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #666;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #666;
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+    }
+</style>
+</head>
+<body>
+  <h1>Emoji Bar‑Viz Builder 🟩⬜</h1>
+
+  <div class="input-group">
+    <label for="percentInput">Coverage&nbsp;%:</label>
+    <input id="percentInput" type="number" min="0" max="100" value="91" />
+    <input id="percentSlider" type="range" min="0" max="100" value="91" />
+    <span class="hint">(0‑100)</span>
+    <select id="styleSelect">
+      <option value="sneakers">Sneakers (👟☐)</option>
+        <option value="emoji">Emoji (🟩⬜)</option>
+        <option value="sneakers2">Sneakers (👟⬜)</option>
+
+    </select>
+  </div>
+
+  <div class="bar-container">
+    <p id="barDisplay" aria-live="polite" aria-label="Emoji bar visualization">
+      <!-- bar will appear here -->
+    </p>
+    <button id="copyButton">Copy</button>
+  </div>
+
+<script>
+(function () {
+  const styles = {
+    emoji: { filled: "🟩", empty: "⬜" },
+    sneakers: { filled: "👟", empty: "☐" },
+    sneakers2: { filled: "👟", empty: "⬜" }
+  };
+
+  const blocks = 10;                 // each block represents 10 %
+
+  const input  = document.getElementById("percentInput");
+  const slider = document.getElementById("percentSlider");
+  const styleSelect = document.getElementById("styleSelect");
+  const output = document.getElementById("barDisplay");
+  const copyButton = document.getElementById("copyButton");
+
+  function getCurrentStyle() {
+    return styles[styleSelect.value];
+  }
+
+  function renderBar(value) {
+    const safe = Math.max(0, Math.min(100, value));     // clamp 0–100
+    const fillCount  = Math.round(safe / (100 / blocks));
+    const emptyCount = blocks - fillCount;
+    const style = getCurrentStyle();
+    const bar = style.filled.repeat(fillCount) + style.empty.repeat(emptyCount);
+
+    output.textContent = `${bar}  ${safe}%`;
+    output.setAttribute(
+      "aria-label",
+      `Coverage ${safe} percent: ${fillCount} filled blocks out of ${blocks}`
+    );
+  }
+
+  function copyToClipboard() {
+    const text = output.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      copyButton.textContent = "Copied!";
+      setTimeout(() => {
+        copyButton.textContent = "Copy";
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  }
+
+  function syncInputs(e) {
+    const value = e.target.value;
+    input.value = value;
+    slider.value = value;
+    renderBar(value);
+  }
+
+  input.addEventListener("input", syncInputs);
+  slider.addEventListener("input", syncInputs);
+  styleSelect.addEventListener("change", () => renderBar(input.value));
+  copyButton.addEventListener("click", copyToClipboard);
+  renderBar(input.value);            // initial render
+})();
+</script>
+</body>
+</html>
