@@ -89,6 +89,19 @@
         body.dark-mode .collapse-btn:hover {
             color: #ffd700;
         }
+        .cards-container {
+            margin-top: 20px;
+            background: #fff !important;
+            color: #222 !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        body.dark-mode .cards-container {
+            background: #23272a !important;
+            color: #e0e6eb !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -96,6 +109,12 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        body.dark-mode .container {
+            opacity: 1 !important;
+            filter: none !important;
         }
         h1 {
             margin: 0 0 20px;
@@ -115,9 +134,6 @@
             font-family: monospace;
             font-size: 14px;
             resize: vertical;
-        }
-        .cards-container {
-            margin-top: 20px;
         }
         .card {
             background: white;
@@ -231,20 +247,20 @@
             display: none;
         }
         .key {
-            color: #2c3e50;
-            font-weight: 500;
+            color: #222;
+            font-weight: 600;
         }
         .string {
-            color: #27ae60;
+            color: #218c3a;
         }
         .number {
-            color: #2980b9;
+            color: #1a5a99;
         }
         .boolean {
-            color: #e67e22;
+            color: #b9770e;
         }
         .null {
-            color: #95a5a6;
+            color: #7f8c8d;
         }
         .error {
             color: #e74c3c;
