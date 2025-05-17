@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Visualizer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0 0 20px;
+            color: #2c3e50;
+        }
+        .input-container {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .cards-container {
+            margin-top: 20px;
+        }
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .card[data-pinned="true"] {
+            background: #fff9e6;
+            border: 1px solid #e67e22;
+            box-shadow: 0 2px 8px rgba(230, 126, 34, 0.1);
+        }
+        .card[data-pinned="true"]:hover {
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.15);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .card[data-pinned="true"] .card-header {
+            border-bottom-color: #ffe0b2;
+        }
+        .card-title {
+            font-weight: 500;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: auto;
+        }
+        .card[data-pinned="true"] .card-title::before {
+            content: '📌';
+            font-size: 14px;
+            color: #e67e22;
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .card-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+        .card-action:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .card-action.pin {
+            color: #e67e22;
+        }
+        .card-action.pin.active {
+            color: #e67e22;
+            background: #fff9e6;
+        }
+        .card[data-pinned="true"] .card-action.pin {
+            background: #fff9e6;
+        }
+        .card-action.delete {
+            color: #e74c3c;
+        }
+        .card-action.delete:hover {
+            background: #fde8e8;
+        }
+        .card-number {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: 8px;
+        }
+        .tree {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .node {
+            margin: 4px 0;
+        }
+        .node-header {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .node-header:hover {
+            background: #f0f0f0;
+        }
+        .expand-icon {
+            color: #666;
+            font-size: 12px;
+            width: 16px;
+            text-align: center;
+        }
+        .node-content {
+            margin-left: 24px;
+            display: none;
+        }
+        .key {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .string {
+            color: #27ae60;
+        }
+        .number {
+            color: #2980b9;
+        }
+        .boolean {
+            color: #e67e22;
+        }
+        .null {
+            color: #95a5a6;
+        }
+        .error {
+            color: #e74c3c;
+            padding: 10px;
+            background: #fde8e8;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .delete-all {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+        .delete-all:hover {
+            background: #c0392b;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .card {
+            animation: slideIn 0.3s ease;
+        }
+        .card-action.star {
+            color: #bbb;
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+        .card-action.star.active {
+            color: #ffd700;
+        }
+        .card[data-starred="true"] {
+            background: #fff;
+            border: 2px solid #ffd700;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.1);
+        }
+        .card[data-starred="true"]:hover {
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
+        }
+        .star-filter {
+            background: #ffd700;
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            margin-right: 10px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .star-filter.active {
+            background: #ffe066;
+        }
+        .collapse-btn {
+            background: #eee;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .collapse-btn:hover {
+            background: #ddd;
+        }
+        .expand-collapse-all {
+            background: #2980b9;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            margin-right: 10px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .expand-collapse-all.active {
+            background: #3498db;
+        }
+        .card-summary {
+            font-family: monospace;
+            font-size: 13px;
+            color: #888;
+            background: #f6f6f6;
+            border-radius: 4px;
+            margin: 8px 0 0 0;
+            padding: 4px 8px;
+            display: none;
+        }
+        button, .card-action, .collapse-btn, .expand-collapse-all, .star-filter, .delete-all {
+            font-family: inherit;
+            font-size: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #2980b9;
+            padding: 7px 16px;
+            cursor: pointer;
+            transition: box-shadow 0.15s, border-color 0.15s, color 0.15s, background 0.15s;
+            outline: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            margin: 0 4px 0 0;
+            display: inline-flex;
+            align-items: center;
+        }
+        button:hover, .card-action:hover, .collapse-btn:hover, .expand-collapse-all:hover, .star-filter:hover, .delete-all:hover {
+            background: #f4f8fb;
+            border-color: #b3d4fc;
+            color: #1565c0;
+            box-shadow: 0 2px 8px rgba(41,128,185,0.07);
+        }
+        .expand-collapse-all, .star-filter, .delete-all, #addCardsBtn {
+            margin-bottom: 16px;
+        }
+        .expand-collapse-all, .star-filter {
+            color: #2980b9;
+            border: 1px solid #b3d4fc;
+            background: #fff;
+        }
+        .expand-collapse-all.active, .star-filter.active {
+            background: #eaf4fd;
+            color: #1565c0;
+            border-color: #2980b9;
+        }
+        .delete-all {
+            color: #e74c3c;
+            border: 1px solid #f5b7b1;
+            background: #fff;
+        }
+        .delete-all:hover {
+            background: #fff0f0;
+            border-color: #e74c3c;
+            color: #c0392b;
+        }
+        .card-action.star {
+            background: none;
+            border: none;
+            color: #bbb;
+            font-size: 18px;
+            padding: 0 8px;
+            margin: 0 2px;
+        }
+        .card-action.star.active {
+            color: #ffd700;
+            background: none;
+        }
+        .card-action.delete {
+            color: #e74c3c;
+            border: none;
+            background: none;
+            font-size: 18px;
+            padding: 0 8px;
+            margin: 0 2px;
+        }
+        .card-action.delete:hover {
+            color: #c0392b;
+            background: none;
+        }
+        .collapse-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, background 0.2s;
+        }
+        .collapse-btn:hover {
+            background: #f4f8fb;
+            color: #2980b9;
+        }
+        .sort-toggle {
+            background: #fff;
+            color: #2980b9;
+            border: 1px solid #b3d4fc;
+            border-radius: 6px;
+            padding: 7px 16px;
+            margin-bottom: 16px;
+            margin-right: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: box-shadow 0.15s, border-color 0.15s, color 0.15s, background 0.15s;
+            outline: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            display: inline-flex;
+            align-items: center;
+        }
+        .sort-toggle.active {
+            background: #eaf4fd;
+            color: #1565c0;
+            border-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Action Visualizer</h1>
+        <div class="input-container">
+            <textarea id="input" placeholder="Paste your JSON data here..."></textarea>
+            <button id="addCardsBtn" style="margin-top:10px;">Add Card(s)</button>
+        </div>
+        <div id="output"></div>
+        <div class="cards-container">
+            <button class="sort-toggle" id="sortToggle">Newest First</button>
+            <button class="expand-collapse-all" id="expandCollapseAll">Collapse All</button>
+            <button class="star-filter" id="starFilter">Show only starred</button>
+            <button class="delete-all" id="deleteAll">Delete All Cards</button>
+            <div id="cards"></div>
+        </div>
+    </div>
+
+    <script>
+        class ProtoVisualizer {
+            constructor() {
+                this.input = document.getElementById('input');
+                this.output = document.getElementById('output');
+                this.cardsContainer = document.getElementById('cards');
+                this.deleteAllButton = document.getElementById('deleteAll');
+                this.starFilterButton = document.getElementById('starFilter');
+                this.expandCollapseAllButton = document.getElementById('expandCollapseAll');
+                this.addCardsBtn = document.getElementById('addCardsBtn');
+                this.sortToggleButton = document.getElementById('sortToggle');
+                
+                this.addCardsBtn.addEventListener('click', () => this.parseAndDisplay());
+                this.deleteAllButton.addEventListener('click', () => this.deleteAllCards());
+                this.starFilterButton.addEventListener('click', () => this.toggleStarFilter());
+                this.expandCollapseAllButton.addEventListener('click', () => this.toggleExpandCollapseAll());
+                this.sortToggleButton.addEventListener('click', () => this.toggleSortOrder());
+                
+                this.starFilterActive = JSON.parse(localStorage.getItem('starFilterActive') || 'false');
+                this.sortNewestFirst = JSON.parse(localStorage.getItem('sortNewestFirst') || 'true');
+                this.updateSortToggleUI();
+                this.allCollapsed = false;
+                this.updateStarFilterUI();
+                this.loadCards();
+            }
+
+            loadCards() {
+                this.renderCards();
+            }
+
+            saveCards() {
+                let cards = Array.from(this.cardsContainer.children).map(card => {
+                    let data = card._visualizerData;
+                    return {
+                        id: card.dataset.id,
+                        data: data,
+                        starred: card.dataset.starred === 'true',
+                        timestamp: card.dataset.timestamp,
+                        displayIndex: card.dataset.displayIndex
+                    };
+                });
+                // Sort by timestamp descending (newest first)
+                cards.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+                localStorage.setItem('visualizerCards', JSON.stringify(cards));
+                if (this.starFilterActive) this.renderCards();
+            }
+
+            addCard(data, id = null, starred = false, timestamp = null, skipSave = false, displayIndex = null, displayNumber = null) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.id = id || Date.now().toString();
+                card.dataset.starred = starred ? 'true' : 'false';
+                card.dataset.timestamp = timestamp || Date.now();
+                card.dataset.displayIndex = displayIndex !== null ? displayIndex : card.dataset.timestamp;
+                card._visualizerData = data; // Store the actual object for saving
+
+                const header = document.createElement('div');
+                header.className = 'card-header';
+
+                const collapseBtn = document.createElement('button');
+                collapseBtn.className = 'collapse-btn';
+                collapseBtn.textContent = '−';
+
+                // Create summary element
+                const summary = document.createElement('div');
+                summary.className = 'card-summary';
+                summary.textContent = this.makeSummary(data);
+
+                collapseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tree = card.querySelector('.tree');
+                    const summary = card.querySelector('.card-summary');
+                    if (tree.style.display === 'none') {
+                        tree.style.display = 'block';
+                        collapseBtn.textContent = '−';
+                        if (summary) summary.style.display = 'none';
+                    } else {
+                        tree.style.display = 'none';
+                        collapseBtn.textContent = '+';
+                        if (summary) summary.style.display = 'block';
+                    }
+                });
+
+                const title = document.createElement('div');
+                title.className = 'card-title';
+                let label = '';
+                if (data && typeof data === 'object') {
+                    if (data.name) {
+                        label = data.name;
+                    } else {
+                        const firstKey = Object.keys(data)[0];
+                        if (firstKey) {
+                            label = `${firstKey}: ${typeof data[firstKey] === 'object' ? '{...}' : data[firstKey]}`;
+                        }
+                    }
+                }
+                if (!label) label = 'Card';
+                let cardNumber = displayNumber !== null ? displayNumber : '';
+                title.textContent = `${label} (Card ${cardNumber})`;
+
+                const actions = document.createElement('div');
+                actions.className = 'card-actions';
+
+                const starButton = document.createElement('button');
+                starButton.className = 'card-action star';
+                starButton.innerHTML = starred ? '★' : '☆';
+                if (starred) starButton.classList.add('active');
+                starButton.addEventListener('click', () => this.toggleStar(card, starButton));
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'card-action delete';
+                deleteButton.innerHTML = '🗑️';
+                deleteButton.addEventListener('click', () => this.deleteCard(card));
+
+                header.appendChild(collapseBtn);
+                header.appendChild(title);
+                actions.appendChild(starButton);
+                actions.appendChild(deleteButton);
+                header.appendChild(actions);
+                card.appendChild(header);
+
+                const tree = document.createElement('div');
+                tree.className = 'tree';
+                this.buildTree(data, tree);
+                card.appendChild(tree);
+                card.appendChild(summary);
+
+                this.cardsContainer.insertBefore(card, this.cardsContainer.firstChild);
+                if (!skipSave) this.saveCards();
+            }
+
+            toggleStar(card, starButton) {
+                const isStarred = card.dataset.starred === 'true';
+                card.dataset.starred = (!isStarred).toString();
+                starButton.classList.toggle('active');
+                starButton.innerHTML = !isStarred ? '★' : '☆';
+                this.saveCards();
+                this.renderCards();
+            }
+
+            deleteCard(card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.remove();
+                    this.saveCards();
+                }, 300);
+            }
+
+            deleteAllCards() {
+                this.cardsContainer.innerHTML = '';
+                this.saveCards();
+            }
+
+            parseAndDisplay() {
+                try {
+                    const inputText = this.input.value.trim();
+                    if (!inputText) {
+                        this.output.innerHTML = '';
+                        return;
+                    }
+
+                    // Split by newlines and parse each JSON object
+                    const jsonStrings = inputText.split('\n').filter(str => str.trim());
+                    const parsedData = jsonStrings.map(str => JSON.parse(str));
+
+                    // Clear previous output
+                    this.output.innerHTML = '';
+
+                    // Find the current max timestamp
+                    const cards = JSON.parse(localStorage.getItem('visualizerCards') || '[]');
+                    let maxTimestamp = cards.length > 0 ? Math.max(...cards.map(c => Number(c.timestamp))) : Date.now();
+
+                    // Add each parsed JSON as a card in the order they appear in the input
+                    parsedData.forEach((data, index) => {
+                        // Assign timestamps so first card in group is newest
+                        maxTimestamp += 1;
+                        const displayIndex = Date.now() + '-' + index + '-' + Math.floor(Math.random()*10000);
+                        this.addCard(data, null, false, maxTimestamp, false, displayIndex);
+                    });
+
+                    this.saveCards();
+                    this.renderCards();
+                    this.input.value = '';
+                } catch (error) {
+                    this.output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                }
+            }
+
+            buildTree(data, parentElement) {
+                for (const [key, value] of Object.entries(data)) {
+                    const node = document.createElement('div');
+                    node.className = 'node';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'node-header';
+                    
+                    const expandIcon = document.createElement('span');
+                    expandIcon.className = 'expand-icon';
+                    expandIcon.textContent = '▼';  // Start with expanded icon
+                    
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'key';
+                    keySpan.textContent = key;
+                    
+                    header.appendChild(expandIcon);
+                    header.appendChild(keySpan);
+                    
+                    const content = document.createElement('div');
+                    content.className = 'node-content';
+                    content.style.display = 'block';  // Start expanded
+                    
+                    if (value === null) {
+                        const nullSpan = document.createElement('span');
+                        nullSpan.className = 'null';
+                        nullSpan.textContent = 'null';
+                        header.appendChild(nullSpan);
+                    } else if (typeof value === 'object' && value !== null) {
+                        this.buildTree(value, content);
+                        // Only add expand icon if there are child nodes
+                        if (content.children.length > 0) {
+                            header.addEventListener('click', function() {
+                                const content = this.nextElementSibling;
+                                const isExpanded = content.style.display !== 'none';
+                                content.style.display = isExpanded ? 'none' : 'block';
+                                this.querySelector('.expand-icon').textContent = isExpanded ? '▶' : '▼';
+                            });
+                        } else {
+                            expandIcon.style.visibility = 'hidden';
+                        }
+                    } else {
+                        const valueSpan = document.createElement('span');
+                        valueSpan.className = typeof value;
+                        valueSpan.textContent = typeof value === 'string' ? `"${value}"` : value;
+                        header.appendChild(valueSpan);
+                        expandIcon.style.visibility = 'hidden';
+                    }
+                    
+                    node.appendChild(header);
+                    node.appendChild(content);
+                    parentElement.appendChild(node);
+                }
+            }
+
+            toggleStarFilter() {
+                this.starFilterActive = !this.starFilterActive;
+                localStorage.setItem('starFilterActive', JSON.stringify(this.starFilterActive));
+                this.updateStarFilterUI();
+                this.renderCards();
+            }
+
+            updateStarFilterUI() {
+                if (this.starFilterActive) {
+                    this.starFilterButton.classList.add('active');
+                    this.starFilterButton.textContent = 'Showing only starred';
+                } else {
+                    this.starFilterButton.classList.remove('active');
+                    this.starFilterButton.textContent = 'Show only starred';
+                }
+            }
+
+            toggleExpandCollapseAll() {
+                this.allCollapsed = !this.allCollapsed;
+                const cards = this.cardsContainer.querySelectorAll('.card');
+                cards.forEach(card => {
+                    const tree = card.querySelector('.tree');
+                    const btn = card.querySelector('.collapse-btn');
+                    const summary = card.querySelector('.card-summary');
+                    if (tree && btn) {
+                        if (this.allCollapsed) {
+                            tree.style.display = 'none';
+                            btn.textContent = '+';
+                            if (summary) summary.style.display = 'block';
+                        } else {
+                            tree.style.display = 'block';
+                            btn.textContent = '−';
+                            if (summary) summary.style.display = 'none';
+                        }
+                    }
+                });
+                this.expandCollapseAllButton.textContent = this.allCollapsed ? 'Expand All' : 'Collapse All';
+            }
+
+            toggleSortOrder() {
+                this.sortNewestFirst = !this.sortNewestFirst;
+                localStorage.setItem('sortNewestFirst', JSON.stringify(this.sortNewestFirst));
+                this.updateSortToggleUI();
+                this.renderCards();
+            }
+
+            updateSortToggleUI() {
+                if (this.sortNewestFirst) {
+                    this.sortToggleButton.textContent = 'Newest First';
+                    this.sortToggleButton.classList.add('active');
+                } else {
+                    this.sortToggleButton.textContent = 'Oldest First';
+                    this.sortToggleButton.classList.remove('active');
+                }
+            }
+
+            renderCards() {
+                // Save expand/collapse state by card id
+                const expandState = {};
+                Array.from(this.cardsContainer.children).forEach(card => {
+                    const id = card.dataset.id;
+                    const tree = card.querySelector('.tree');
+                    expandState[id] = tree && tree.style.display !== 'none';
+                });
+
+                this.cardsContainer.innerHTML = '';
+                const cards = JSON.parse(localStorage.getItem('visualizerCards') || '[]');
+                const filtered = this.starFilterActive ? cards.filter(card => card.starred) : cards;
+                if (this.sortNewestFirst) {
+                    filtered.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+                } else {
+                    filtered.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+                }
+                filtered.forEach((card, idx) => {
+                    let data = card.data;
+                    if (typeof data === 'string') {
+                        try { data = JSON.parse(data); } catch (e) {}
+                    }
+                    this.addCard(data, card.id, card.starred, card.timestamp, true, card.displayIndex, idx + 1);
+                });
+                // Restore expand/collapse state
+                Array.from(this.cardsContainer.children).forEach(card => {
+                    const id = card.dataset.id;
+                    const tree = card.querySelector('.tree');
+                    const summary = card.querySelector('.card-summary');
+                    const collapseBtn = card.querySelector('.collapse-btn');
+                    if (expandState[id] === false) {
+                        if (tree) tree.style.display = 'none';
+                        if (summary) summary.style.display = 'block';
+                        if (collapseBtn) collapseBtn.textContent = '+';
+                    } else {
+                        if (tree) tree.style.display = 'block';
+                        if (summary) summary.style.display = 'none';
+                        if (collapseBtn) collapseBtn.textContent = '−';
+                    }
+                });
+            }
+
+            makeSummary(data) {
+                if (!data || typeof data !== 'object') return '';
+                const entries = Object.entries(data).slice(0, 3);
+                return entries.map(([k, v]) => {
+                    if (typeof v === 'object' && v !== null) return `${k}: {...}`;
+                    if (typeof v === 'string') return `${k}: "${v}"`;
+                    return `${k}: ${v}`;
+                }).join(', ');
+            }
+        }
+
+        // Initialize the visualizer
+        new ProtoVisualizer();
+    </script>
+</body>
+</html> 
