@@ -475,6 +475,32 @@
             color: #1565c0;
             border-color: #2980b9;
         }
+        .card-action.copy {
+            color: #2980b9;
+            border: none;
+            background: none;
+            font-size: 18px;
+            padding: 0 8px;
+            margin: 0 2px;
+        }
+        .card-action.copy:hover {
+            color: #1565c0;
+            background: none;
+        }
+        .card-action.copy svg {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            fill: currentColor;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .card-action.copy.pop {
+            animation: pop 0.3s cubic-bezier(.4,1.4,.7,1);
+        }
     </style>
 </head>
 <body>
@@ -603,6 +629,30 @@
                 const actions = document.createElement('div');
                 actions.className = 'card-actions';
 
+                const copyButton = document.createElement('button');
+                copyButton.className = 'card-action copy';
+                copyButton.innerHTML = `<svg viewBox="0 0 20 20"><rect x="6" y="2" width="8" height="2" rx="1"/><rect x="4" y="4" width="12" height="14" rx="2"/></svg>`;
+                copyButton.title = 'Copy JSON';
+                copyButton.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                        const old = copyButton.innerHTML;
+                        copyButton.innerHTML = '✅';
+                        copyButton.classList.add('pop');
+                        setTimeout(() => {
+                            copyButton.innerHTML = old;
+                            copyButton.classList.remove('pop');
+                        }, 1000);
+                    } catch (e) {
+                        copyButton.innerHTML = '❌';
+                        copyButton.classList.add('pop');
+                        setTimeout(() => {
+                            copyButton.innerHTML = `<svg viewBox=\"0 0 20 20\"><rect x=\"6\" y=\"2\" width=\"8\" height=\"2\" rx=\"1\"/><rect x=\"4\" y=\"4\" width=\"12\" height=\"14\" rx=\"2\"/></svg>`;
+                            copyButton.classList.remove('pop');
+                        }, 1000);
+                    }
+                });
+
                 const starButton = document.createElement('button');
                 starButton.className = 'card-action star';
                 starButton.innerHTML = starred ? '★' : '☆';
@@ -614,10 +664,11 @@
                 deleteButton.innerHTML = '🗑️';
                 deleteButton.addEventListener('click', () => this.deleteCard(card));
 
-                header.appendChild(collapseBtn);
-                header.appendChild(title);
+                actions.appendChild(copyButton);
                 actions.appendChild(starButton);
                 actions.appendChild(deleteButton);
+                header.appendChild(collapseBtn);
+                header.appendChild(title);
                 header.appendChild(actions);
                 card.appendChild(header);
 
@@ -662,9 +713,25 @@
                         return;
                     }
 
-                    // Split by newlines and parse each JSON object
-                    const jsonStrings = inputText.split('\n').filter(str => str.trim());
-                    const parsedData = jsonStrings.map(str => JSON.parse(str));
+                    let parsedData = [];
+                    let parseError = null;
+                    // Try to parse as a single JSON object first
+                    try {
+                        parsedData = [JSON.parse(inputText)];
+                    } catch (e) {
+                        // If that fails, try parsing each line as a JSON object
+                        parsedData = [];
+                        const lines = inputText.split('\n').map(l => l.trim()).filter(l => l);
+                        for (const line of lines) {
+                            try {
+                                parsedData.push(JSON.parse(line));
+                            } catch (err) {
+                                parseError = err;
+                                break;
+                            }
+                        }
+                        if (parseError) throw parseError;
+                    }
 
                     // Clear previous output
                     this.output.innerHTML = '';
