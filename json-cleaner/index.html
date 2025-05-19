@@ -516,6 +516,7 @@
             <button class="sort-toggle" id="sortToggle">Newest First</button>
             <button class="expand-collapse-all" id="expandCollapseAll">Collapse All</button>
             <button class="star-filter" id="starFilter">Show only starred</button>
+            <button class="sort-toggle" id="hideNullsToggle">Hide NULL Values</button>
             <button class="delete-all" id="deleteAll">Delete All Cards</button>
             <div id="cards"></div>
         </div>
@@ -533,6 +534,7 @@
                 this.addCardsBtn = document.getElementById('addCardsBtn');
                 this.sortToggleButton = document.getElementById('sortToggle');
                 this.darkModeToggle = document.getElementById('darkModeToggle');
+                this.hideNullsToggle = document.getElementById('hideNullsToggle');
                 
                 this.addCardsBtn.addEventListener('click', () => this.parseAndDisplay());
                 this.deleteAllButton.addEventListener('click', () => this.deleteAllCards());
@@ -540,11 +542,16 @@
                 this.expandCollapseAllButton.addEventListener('click', () => this.toggleExpandCollapseAll());
                 this.sortToggleButton.addEventListener('click', () => this.toggleSortOrder());
                 this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+                this.hideNullsToggle.addEventListener('click', () => this.toggleHideNulls());
                 
                 this.starFilterActive = JSON.parse(localStorage.getItem('starFilterActive') || 'false');
                 this.sortNewestFirst = JSON.parse(localStorage.getItem('sortNewestFirst') || 'true');
                 this.darkMode = JSON.parse(localStorage.getItem('darkMode') || 'false');
+                this.hideNulls = JSON.parse(localStorage.getItem('hideNulls') || 'false');
+                
                 if (this.darkMode) document.body.classList.add('dark-mode');
+                if (this.hideNulls) this.hideNullsToggle.classList.add('active');
+                
                 this.updateSortToggleUI();
                 this.allCollapsed = false;
                 this.updateStarFilterUI();
@@ -758,6 +765,11 @@
 
             buildTree(data, parentElement) {
                 for (const [key, value] of Object.entries(data)) {
+                    // Skip null values at root level if hideNulls is active
+                    if (this.hideNulls && value === null && parentElement.classList.contains('tree')) {
+                        continue;
+                    }
+
                     const node = document.createElement('div');
                     node.className = 'node';
                     
@@ -936,6 +948,14 @@
                 } else {
                     this.darkModeToggle.textContent = '🌙 Dark Mode';
                 }
+            }
+
+            toggleHideNulls() {
+                this.hideNulls = !this.hideNulls;
+                localStorage.setItem('hideNulls', JSON.stringify(this.hideNulls));
+                this.hideNullsToggle.classList.toggle('active');
+                this.hideNullsToggle.textContent = this.hideNulls ? 'Show NULL Values' : 'Hide NULL Values';
+                this.renderCards();
             }
         }
 
